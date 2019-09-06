@@ -11,13 +11,16 @@ public class Searcher {
 	private static String wikiApiURL = "https://www.wikipedia.org/w/api.php";
 	private static String wikiArticleURL = "https://en.wikipedia.org/wiki/";
 	
-	public BufferedImage image (String link) {
+	public BufferedImage[] image (String title) {
 		// TODO: Return image from page
 		return null;
 	}
 	
-	public String text (String link) {
-		// TODO: Return text from page
+	public String text (String title) {
+		System.out.println (title);
+		String urlString = wikiApiURL + "?action=parse&page=" + title + "&format=json";
+		String data = rawData (urlString);
+		System.out.println (data);
 		return null;
 	}
 	
@@ -28,7 +31,7 @@ public class Searcher {
 		int startChar = data.indexOf("\"search\"");
 		while (startChar > 0) {
 			startChar = data.indexOf("title", startChar);
-			newnames.add(data.substring(data.indexOf(":", startChar) + 1, data.indexOf(",", startChar)).replaceAll(" ", "_"));
+			newnames.add(data.substring(data.indexOf(":", startChar) + 1, data.indexOf(",", startChar)).replaceAll(" ", "_").replaceAll ("\"", ""));
 			startChar = data.indexOf("}", startChar);
 			if (data.charAt(startChar+1) == ']') break;
 		}

@@ -12,10 +12,11 @@ public class DreamEngine {
 		Searcher s = new Searcher ();
 		for (String ss : s.links("Boris Johnson")) {
 			System.out.println (ss);
+			s.text(ss);
 		}
 		
-		DreamEngine de = new DreamEngine ();
-		de.initiate();
+		//DreamEngine de = new DreamEngine ();
+		//de.initiate();
 	}
 	
 	private ArrayList<String> texts = new ArrayList<String> ();
