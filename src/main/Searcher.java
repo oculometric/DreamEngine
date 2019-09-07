@@ -17,11 +17,27 @@ public class Searcher {
 	}
 	
 	public String text (String title) {
-		System.out.println (title);
-		String urlString = wikiApiURL + "?action=parse&page=" + title + "&format=json";
+		String urlString = wikiApiURL + "?action=parse&page=" + title + "&prop=text&format=json";
 		String data = rawData (urlString);
-		System.out.println (data);
-		return null;
+		String prefix = "\"text\":{\"*\":\"";
+		int bI = data.indexOf(prefix) + prefix.length();
+		int bracks = 1;
+		int eI = bI;
+		while (bracks > 0 && eI < data.length()) {
+			if (data.charAt(eI) == '}') bracks--;
+			if (data.charAt(eI) == '{') bracks++;
+			//System.out.println (bracks);
+			eI++;
+		}
+		String content = data.substring (bI, eI-2);
+		int a,b = 0;
+		while (b < content.length()) {
+			a = content.indexOf("<");
+			b = content.indexOf(">", a);
+			content = content.substring(0, a) + " " + content.substring(b+1);
+		}
+		content = content.trim().replaceAll("(\\s)+", " ");
+		return content;
 	}
 	
 	public String[] links (String searchTerm) {
@@ -44,11 +60,14 @@ public class Searcher {
 		try {
 			URL url = new URL (urlString);
 			URLConnection conn = url.openConnection();
+			conn.connect();
 			InputStream is = conn.getInputStream();
 			String data = new String (is.readAllBytes());
+			is.close();
 			return data;
 		} catch (IOException e) {
 			e.printStackTrace();
+			System.exit(1);
 			return "";
 		}
 	}
