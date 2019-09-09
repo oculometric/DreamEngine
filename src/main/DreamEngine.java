@@ -44,7 +44,7 @@ public class DreamEngine {
 		// TODO: Add image
 	}
 	
-	public void exportDream (String prefixPath) {
+	public void exportDream () {
 		// TODO: Export dream
 	}
 	
