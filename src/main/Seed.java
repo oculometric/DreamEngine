@@ -1,5 +1,11 @@
 package main;
 
 public class Seed {
-	int a,b,c;
+	public int a,b,c;
+
+	public Seed (int aa, int bb, int cc) {
+		a = aa;
+		b = bb;
+		c = cc;
+	}
 }
