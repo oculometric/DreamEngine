@@ -1,6 +1,10 @@
 package main;
 
+import java.awt.Color;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -9,6 +13,7 @@ public class DreamEngine {
 
 	public static int dreamCycleLength = 5;
 	public static int searchCycleLength = 10;
+	int iterationNum = 0;
 	
 	public static void main(String[] args) {
 		DreamEngine engine = new DreamEngine ();
@@ -17,7 +22,7 @@ public class DreamEngine {
 	private ArrayList<String> texts = new ArrayList<String> ();
 	private ArrayList<BufferedImage> images = new ArrayList<BufferedImage> ();
 	private Searcher searcher = new Searcher ();
-	private Random random = new Random (0);
+	private Random random = new Random ();
 
 	public void gatherData (String prompt, int pages, int wordsToAcquire) {
 		ArrayList<String> links = new ArrayList<String> (Arrays.asList(searcher.links(prompt)));
@@ -35,23 +40,72 @@ public class DreamEngine {
 	}
 	
 	public BufferedImage activeDream;
+	public boolean isOperating;
+	private ArrayList<Node> activeNodes = new ArrayList<Node> ();
 	
-	public void addTextToDream (String s, Seed seed) {
-		// TODO: Add text
+	public String makeInstructionSequence () {
+		// TODO: Make Instruction Seqeuence
 	}
 	
-	public void addImageToDream (BufferedImage s, Seed seed) {
-		// TODO: Add image
+	public void setPixel (int x, int y, Color col) {
+		synchronized (setRequests) {
+			setRequests.add(new PixelSetRequest (x, y, col));
+		}
+	}
+	
+	private ArrayList<PixelSetRequest> setRequests = new ArrayList<PixelSetRequest> ();
+	
+	public void writeNodeDeterminators () {
+		String data = "";
+		for (Node n : activeNodes) {
+			String det = "";
+			for (String s : n.determinator) {
+				det += s + ";";
+			}
+			data += det + "\n";
+		}
+		try {
+            Files.write(Paths.get("nodes.txt"), data.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+	}
+	
+	public String[] readNodeDeterminators () {
+		// TODO: READ IN
 	}
 	
 	public void exportDream () {
 		// TODO: Export dream
 	}
 	
+	public void updateDream () {
+		ArrayList<PixelSetRequest> reqs;
+		synchronized (setRequests) {
+			reqs = (ArrayList<PixelSetRequest>)setRequests.clone();
+			setRequests.clear();
+		}
+		for (PixelSetRequest req : reqs) {
+			activeDream.setRGB(req.x, req.y, req.col.getRGB());
+		}
+	}
+	
+	// TODO: GRAPHICS
+	
 	public void start () {
-		Thread t = new Thread () {
-			// TODO: Mainlooping
-		};
+		// TODO: Fetch images
+		isOperating = true;
+		for (int i = 0; i < 8; i++) {
+			Node node = new Node (this, makeInstructionSequence(), images.get(random.nextInt(images.size())));
+			activeNodes.add(node);
+		}
+		while (iterationNum < 1000) {
+			updateDream();
+		}
+		isOperating = false;
+		writeNodeDeterminators ();
+		updateDream ();
+		exportDream ();
 	}
 
 }
