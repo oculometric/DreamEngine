@@ -1,5 +1,6 @@
 package main;
 
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,13 +8,34 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.ArrayList;
 
+import javax.imageio.ImageIO;
+
 public class Searcher {
 	private static String wikiApiURL = "https://www.wikipedia.org/w/api.php";
 	private static String wikiArticleURL = "https://en.wikipedia.org/wiki/";
 	
 	public BufferedImage[] images (String title) {
-		// TODO: Return image from page
-		return null;
+		String urlString = wikiApiURL + "?action=parse&page=" + title + "&prop=images&format=json";
+		String data = rawData (urlString);
+		ArrayList<String> urls = new ArrayList<String> ();
+		int start = data.indexOf('[');
+		int end = data.indexOf(']');
+		int currentIndex = start;
+		currentIndex = data.indexOf('"', currentIndex);
+		int newIndex = data.indexOf('"', currentIndex+1);
+		while (currentIndex != -1 && currentIndex < end && currentIndex > start) {
+			urls.add (data.substring(currentIndex+1, newIndex));
+			currentIndex = data.indexOf('"', newIndex+1);
+			newIndex = data.indexOf('"', currentIndex+1);
+		}
+		
+		ArrayList<BufferedImage> images = new ArrayList<BufferedImage> ();
+		for (String url : urls) {
+			String imageRequestString = wikiApiURL + "?action=query&titles=File:" + url + "&prop=imageinfo&iiprop=url&format=json";
+			BufferedImage im = imageData (imageRequestString);
+			if (im != null) images.add(im);
+		}
+		return (BufferedImage[])images.toArray();
 	}
 	
 	public String text (String title) {
@@ -69,6 +91,29 @@ public class Searcher {
 			e.printStackTrace();
 			System.exit(1);
 			return "";
+		}
+	}
+	
+	public BufferedImage imageData (String urlString) {
+		try {
+			URL url = new URL (urlString);
+			URLConnection conn = url.openConnection();
+			conn.connect();
+			InputStream is = conn.getInputStream();
+			String data = new String (is.readAllBytes());
+			is.close();
+			int start = data.indexOf("\"url\":") + 7;
+			int end = data.indexOf('"', start);
+			String trueURL = data.substring(start, end);
+			url = new URL (trueURL);
+			conn = url.openConnection();
+			conn.connect();
+			is = conn.getInputStream();
+			BufferedImage image = ImageIO.read(is);
+			return image;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
 		}
 	}
 	

@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
+import javax.swing.JOptionPane;
 
 public class DreamEngine {
 
@@ -22,7 +23,9 @@ public class DreamEngine {
 	int iterationNum = 0;
 	
 	public static void main(String[] args) {
+		String s = (String)JOptionPane.showInputDialog("Enter a search prompt:");
 		DreamEngine engine = new DreamEngine ();
+		engine.start(s);
 	}
 	
 	private ArrayList<String> texts = new ArrayList<String> ();
@@ -42,6 +45,20 @@ public class DreamEngine {
 				String word = words.get(random.nextInt(words.size()));
 				texts.add(word);
 				while (true) if (!words.remove(word)) break;
+			}
+		}
+	}
+	
+	public void fetchImages (int num, String prompt) {
+		ArrayList<String> links = new ArrayList<String> (Arrays.asList(searcher.links(prompt)));
+		int imagesFound = 0;
+		while (imagesFound < num) {
+			if (links.size() < 1) break;
+			BufferedImage[] imgs = searcher.images(links.get(random.nextInt(links.size())));
+			for (BufferedImage im : imgs) {
+				imagesFound++;
+				images.add(im);
+				if (imagesFound >= num) break;
 			}
 		}
 	}
@@ -132,10 +149,9 @@ public class DreamEngine {
 		viewer.repaint();
 	}
 	
-	// TODO: GRAPHICS
 	
-	public void start () {
-		// TODO: Fetch images
+	public void start (String prompt) {
+		fetchImages (20, prompt);
 		activeDream = new BufferedImage (1024, 1024, BufferedImage.TYPE_INT_RGB);
 		viewer = new DreamViewer (this);
 		
