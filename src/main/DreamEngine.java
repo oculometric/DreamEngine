@@ -1,13 +1,19 @@
 package main;
 
 import java.awt.Color;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.Scanner;
+
+import javax.imageio.ImageIO;
 
 public class DreamEngine {
 
@@ -23,7 +29,8 @@ public class DreamEngine {
 	private ArrayList<BufferedImage> images = new ArrayList<BufferedImage> ();
 	private Searcher searcher = new Searcher ();
 	private Random random = new Random ();
-
+	private DreamViewer viewer;
+	
 	public void gatherData (String prompt, int pages, int wordsToAcquire) {
 		ArrayList<String> links = new ArrayList<String> (Arrays.asList(searcher.links(prompt)));
 		for (int i = 0; i < pages; i++) {
@@ -44,12 +51,24 @@ public class DreamEngine {
 	private ArrayList<Node> activeNodes = new ArrayList<Node> ();
 	
 	public String makeInstructionSequence () {
-		// TODO: Make Instruction Seqeuence
+		String is = "";
+		int numInstrs = random.nextInt(100);
+		for (int i = 0; i < numInstrs; i++) {
+			is += random.nextInt(18);
+			is += ";";
+		}
+		return is;
 	}
 	
-	public void setPixel (int x, int y, Color col) {
+	public void setPixel (int x, int y, int col) {
 		synchronized (setRequests) {
 			setRequests.add(new PixelSetRequest (x, y, col));
+		}
+	}
+	
+	public int getPixel (int x, int y) {
+		synchronized (activeDream) {
+			return activeDream.getRGB(x, y);
 		}
 	}
 	
@@ -72,11 +91,31 @@ public class DreamEngine {
 	}
 	
 	public String[] readNodeDeterminators () {
-		// TODO: READ IN
+		File file = new File("nodes.txt");
+		ArrayList<String> inp = new ArrayList<String> ();
+		Scanner sc;
+		try {
+			sc = new Scanner(file);
+			while (sc.hasNextLine()) inp.add(sc.nextLine());
+			return (String[]) inp.toArray();
+		} catch (FileNotFoundException e) {
+			return null;
+		}
 	}
 	
 	public void exportDream () {
-		// TODO: Export dream
+		File f = new File ("dream.png");
+		int num = 0;
+		while (f.exists()) {
+			num++;
+			f = new File ("dream" + num + ".png");
+		}
+		try {
+			
+			ImageIO.write (activeDream, "png", f);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public void updateDream () {
@@ -85,18 +124,25 @@ public class DreamEngine {
 			reqs = (ArrayList<PixelSetRequest>)setRequests.clone();
 			setRequests.clear();
 		}
-		for (PixelSetRequest req : reqs) {
-			activeDream.setRGB(req.x, req.y, req.col.getRGB());
+		synchronized (activeDream) {
+			for (PixelSetRequest req : reqs) {
+				activeDream.setRGB(req.x, req.y, req.col);
+			}
 		}
+		viewer.repaint();
 	}
 	
 	// TODO: GRAPHICS
 	
 	public void start () {
 		// TODO: Fetch images
+		activeDream = new BufferedImage (1024, 1024, BufferedImage.TYPE_INT_RGB);
+		viewer = new DreamViewer (this);
+		
+		String[] dets = readNodeDeterminators ();
 		isOperating = true;
 		for (int i = 0; i < 8; i++) {
-			Node node = new Node (this, makeInstructionSequence(), images.get(random.nextInt(images.size())));
+			Node node = new Node (this, ((dets!=null && dets.length > i) ? dets[i] : makeInstructionSequence()), images.get(random.nextInt(images.size())));
 			activeNodes.add(node);
 		}
 		while (iterationNum < 1000) {

@@ -11,7 +11,7 @@ public class Searcher {
 	private static String wikiApiURL = "https://www.wikipedia.org/w/api.php";
 	private static String wikiArticleURL = "https://en.wikipedia.org/wiki/";
 	
-	public BufferedImage[] image (String title) {
+	public BufferedImage[] images (String title) {
 		// TODO: Return image from page
 		return null;
 	}

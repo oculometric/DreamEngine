@@ -6,9 +6,9 @@ public class PixelSetRequest {
 	
 	public int x;
 	public int y;
-	public Color col;
+	public int col;
 
-	public PixelSetRequest (int ix, int iy, Color icol) {
+	public PixelSetRequest (int ix, int iy, int icol) {
 		x = ix;
 		y = iy;
 		col = icol;
