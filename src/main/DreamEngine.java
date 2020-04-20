@@ -69,7 +69,7 @@ public class DreamEngine {
 	
 	public String makeInstructionSequence () {
 		String is = "";
-		int numInstrs = random.nextInt(100);
+		int numInstrs = random.nextInt(100)+500;
 		for (int i = 0; i < numInstrs; i++) {
 			is += random.nextInt(18);
 			is += ";";
@@ -114,7 +114,7 @@ public class DreamEngine {
 		try {
 			sc = new Scanner(file);
 			while (sc.hasNextLine()) inp.add(sc.nextLine());
-			return (String[]) inp.toArray();
+			return inp.toArray(new String[inp.size()]);
 		} catch (FileNotFoundException e) {
 			return null;
 		}
@@ -149,7 +149,6 @@ public class DreamEngine {
 		viewer.repaint();
 	}
 	
-	
 	public void start (String prompt) {
 		fetchImages (20, prompt);
 		activeDream = new BufferedImage (1024, 1024, BufferedImage.TYPE_INT_RGB);
@@ -157,17 +156,23 @@ public class DreamEngine {
 		
 		String[] dets = readNodeDeterminators ();
 		isOperating = true;
-		for (int i = 0; i < 8; i++) {
+		for (int i = 0; i < 16; i++) {
 			Node node = new Node (this, ((dets!=null && dets.length > i) ? dets[i] : makeInstructionSequence()), images.get(random.nextInt(images.size())));
 			activeNodes.add(node);
 		}
 		while (iterationNum < 1000) {
 			updateDream();
+			System.out.println ("Iteration " + iterationNum + " completed.");
+			iterationNum++;
+			
+			try {Thread.sleep(50);} catch (InterruptedException e) {}
 		}
 		isOperating = false;
 		writeNodeDeterminators ();
 		updateDream ();
 		exportDream ();
+		viewer.setVisible(false);
+		viewer.dispose();
 	}
 
 }

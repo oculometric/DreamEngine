@@ -15,6 +15,7 @@ public class Searcher {
 	private static String wikiArticleURL = "https://en.wikipedia.org/wiki/";
 	
 	public BufferedImage[] images (String title) {
+		System.out.println ("Fetching images from " + title);
 		String urlString = wikiApiURL + "?action=parse&page=" + title + "&prop=images&format=json";
 		String data = rawData (urlString);
 		ArrayList<String> urls = new ArrayList<String> ();
@@ -31,11 +32,12 @@ public class Searcher {
 		
 		ArrayList<BufferedImage> images = new ArrayList<BufferedImage> ();
 		for (String url : urls) {
+			if (url.contains(".svg")) continue;
 			String imageRequestString = wikiApiURL + "?action=query&titles=File:" + url + "&prop=imageinfo&iiprop=url&format=json";
 			BufferedImage im = imageData (imageRequestString);
 			if (im != null) images.add(im);
 		}
-		return (BufferedImage[])images.toArray();
+		return images.toArray(new BufferedImage[images.size()]);
 	}
 	
 	public String text (String title) {
@@ -110,6 +112,7 @@ public class Searcher {
 			conn.connect();
 			is = conn.getInputStream();
 			BufferedImage image = ImageIO.read(is);
+			System.out.println ("Successfully fetched " + trueURL);
 			return image;
 		} catch (IOException e) {
 			e.printStackTrace();
