@@ -68,7 +68,7 @@ public class DreamEngine {
 	private ArrayList<Node> activeNodes = new ArrayList<Node> ();
 	
 	public String makeInstructionSequence () {
-		String is = "";
+		String is = ""; // FIXME: Improve instruction sequence maker
 		int numInstrs = random.nextInt(100)+500;
 		for (int i = 0; i < numInstrs; i++) {
 			is += random.nextInt(18);
@@ -160,7 +160,7 @@ public class DreamEngine {
 			Node node = new Node (this, ((dets!=null && dets.length > i) ? dets[i] : makeInstructionSequence()), images.get(random.nextInt(images.size())));
 			activeNodes.add(node);
 		}
-		while (iterationNum < 1000) {
+		while (iterationNum < 10000 && isOperating) {
 			updateDream();
 			System.out.println ("Iteration " + iterationNum + " completed.");
 			iterationNum++;

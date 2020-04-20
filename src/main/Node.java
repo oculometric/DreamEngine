@@ -31,6 +31,8 @@ import java.awt.image.BufferedImage;
  * 16 - Increment dream y cursor
  * 17 - Decrement dream y cursor
  * 
+ * TODO: Extra operations for area copying
+ * 18 - 
  */
 
 public class Node {
