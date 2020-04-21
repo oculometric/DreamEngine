@@ -40,7 +40,7 @@ import java.awt.image.BufferedImage;
  * 
  * 23 - Copy pixels in a radius around the cursor
  * 
- * 24 - Jump by an offset determined by the states TODO
+ * 24 - Jump by an offset determined by the states
  */
 
 public class Node {
@@ -62,7 +62,7 @@ public class Node {
 	public Node (DreamEngine en, String det, BufferedImage im) {
 		
 		bufferCursor = new Cursor (0,0);
-		dreamCursor = new Cursor (random.nextInt(4096), random.nextInt(4096));
+		dreamCursor = new Cursor (random.nextInt(en.imageSize), random.nextInt(en.imageSize));
 		
 		engine = en;
 		buffer = im;
@@ -90,6 +90,16 @@ public class Node {
 		// TODO Mutate node determinator
 	}
 
+	private void setRGB (int x, int y, int rgb) {
+		if (x >= buffer.getWidth() || y >= buffer.getHeight() || x < 0 || y < 0) return;
+		buffer.setRGB(x, y, rgb);
+	}
+	
+	private int getRGB (int x, int y) {
+		if (x >= buffer.getWidth() || y >= buffer.getHeight() || x < 0 || y < 0) return 0;
+		return buffer.getRGB(x, y);
+	}
+	
 	private void executeDeterminator () {
 		boolean shouldSkipNext = false;
 		int loc = 0;
@@ -110,7 +120,7 @@ public class Node {
 				engine.setPixel(dreamCursor.x, dreamCursor.y, buffer.getRGB(bufferCursor.x, bufferCursor.y));
 				break;
 			case 1:
-				buffer.setRGB(bufferCursor.x, bufferCursor.y, engine.getPixel(dreamCursor.x, dreamCursor.y));
+				setRGB(bufferCursor.x, bufferCursor.y, engine.getPixel(dreamCursor.x, dreamCursor.y));
 				break;
 			case 2:
 				states[stateCursor] = !states[stateCursor];
@@ -135,7 +145,7 @@ public class Node {
 			case 8:
 				shouldSkipNext = false;
 			case 9:
-				Color pixel = new Color (buffer.getRGB(bufferCursor.x, bufferCursor.y));
+				Color pixel = new Color (getRGB(bufferCursor.x, bufferCursor.y));
 				if (pixel.getRed() > 0) {
 					states[0] = true;
 					if (pixel.getRed() > 127) {
@@ -158,7 +168,6 @@ public class Node {
 					}
 				}
 				break;
-				// FIXME: Two remaining values?
 			case 10:
 				int r = 0;
 				int g = 0;
@@ -182,7 +191,7 @@ public class Node {
 					b = 64;
 				}
 				Color pix = new Color (r,g,b);
-				buffer.setRGB(bufferCursor.x, bufferCursor.y, pix.getRGB());
+				setRGB(bufferCursor.x, bufferCursor.y, pix.getRGB());
 				break;
 			case 15:
 				dreamCursor.x++;
@@ -241,6 +250,22 @@ public class Node {
 			case 23:
 				int radius = statesToInt();
 				copyArea (new Cursor (bufferCursor.x-radius, bufferCursor.y-radius), new Cursor (bufferCursor.x+radius, bufferCursor.y+radius), new Cursor (dreamCursor.x-radius, dreamCursor.y-radius));
+				break;
+			case 24:
+				int[] pair = statesToIntPair();
+				bufferCursor.x += (pair[0]-8);
+				if (bufferCursor.x > buffer.getWidth()) bufferCursor.x -= buffer.getWidth();
+				if (bufferCursor.x < 0) bufferCursor.x += buffer.getWidth();
+				bufferCursor.y += (pair[1]-8);
+				if (bufferCursor.y > buffer.getHeight()) bufferCursor.y -= buffer.getHeight();
+				if (bufferCursor.y < 0) bufferCursor.y += buffer.getHeight();
+				dreamCursor.x += (pair[0]-8);
+				if (dreamCursor.x > engine.activeDream.getWidth()) dreamCursor.x -= engine.activeDream.getWidth();
+				if (dreamCursor.x < 0) dreamCursor.x += engine.activeDream.getWidth();
+				dreamCursor.y += (pair[1]-8);
+				if (dreamCursor.y > engine.activeDream.getHeight()) dreamCursor.y -= engine.activeDream.getHeight();
+				if (dreamCursor.y < 0) dreamCursor.y += engine.activeDream.getHeight();
+				break;
 			}
 			loc++;
 		}
@@ -255,6 +280,23 @@ public class Node {
 		}
 		return r;
 	}
+	
+	private int[] statesToIntPair() {
+		int r = 0;
+		int s = 0;
+		int a = 1;
+		for (boolean state : states) {
+			if (state) r += a;
+			a *= 2;
+			if (a == 16) {
+				a = 1;
+				s = r;
+				r = 0;
+			}
+		}
+		int[] arr = {s, r};
+		return arr;
+	}
 
 	private void copyArea(Cursor c1, Cursor c2, Cursor ps) {
 		Cursor start = new Cursor (Math.min (c1.x, c2.x), Math.min (c1.y, c2.y));
@@ -268,7 +310,7 @@ public class Node {
 				int ty = ps.y + j;
 				if (ox < 0 || oy < 0 || tx < 0 || ty < 0) continue;
 				if (ox >= buffer.getWidth() || oy >= buffer.getHeight() || tx >= engine.activeDream.getWidth() || ty >= engine.activeDream.getHeight()) continue;
-				engine.setPixel(tx, ty, buffer.getRGB(ox, oy));
+				engine.setPixel(tx, ty, getRGB(ox, oy));
 			}
 		}
 	}

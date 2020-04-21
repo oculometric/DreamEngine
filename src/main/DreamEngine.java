@@ -1,7 +1,5 @@
 package main;
 
-import java.awt.Color;
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,7 +12,6 @@ import java.util.Random;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
-import javax.swing.JOptionPane;
 
 public class DreamEngine {
 
@@ -22,10 +19,24 @@ public class DreamEngine {
 	public static int searchCycleLength = 10;
 	int iterationNum = 0;
 	
+	public boolean rebuildNodes;
+	public int numNodes;
+	public int numIts;
+	public int imageSize;
+	public int windowSize;
+	public String searchPrompt;
+	
 	public static void main(String[] args) {
-		String s = (String)JOptionPane.showInputDialog("Enter a search prompt:");
+		Dialog d = new Dialog ();
+		Object[] vals = d.run();		
 		DreamEngine engine = new DreamEngine ();
-		engine.start(s);
+		engine.rebuildNodes = (boolean)vals[0];
+		engine.numNodes = (int)vals[1];
+		engine.numIts = (int)vals[2];
+		engine.imageSize = (int)vals[3];
+		engine.windowSize = (int)vals[4];
+		engine.searchPrompt = (String)vals[5];
+		engine.start();
 	}
 	
 	private ArrayList<String> texts = new ArrayList<String> ();
@@ -104,6 +115,7 @@ public class DreamEngine {
 		try {
 			sc = new Scanner(file);
 			while (sc.hasNextLine()) inp.add(sc.nextLine());
+			sc.close();
 			return inp.toArray(new String[inp.size()]);
 		} catch (FileNotFoundException e) {
 			return null;
@@ -133,24 +145,25 @@ public class DreamEngine {
 		}
 		synchronized (activeDream) {
 			for (PixelSetRequest req : reqs) {
+				if (req.x >= activeDream.getWidth() || req.y >= activeDream.getHeight() || req.x < 0 || req.y < 0) continue;
 				activeDream.setRGB(req.x, req.y, req.col);
 			}
 		}
 		viewer.repaint();
 	}
 	
-	public void start (String prompt) {
-		fetchImages (20, prompt);
-		activeDream = new BufferedImage (4096, 4096, BufferedImage.TYPE_INT_RGB);
+	public void start () {
+		fetchImages (numNodes*3, searchPrompt);
+		activeDream = new BufferedImage (imageSize, imageSize, BufferedImage.TYPE_INT_RGB);
 		viewer = new DreamViewer (this);
 		
 		String[] dets = readNodeDeterminators ();
 		isOperating = true;
-		for (int i = 0; i < 4; i++) {
-			Node node = new Node (this, ((dets!=null && dets.length > i) ? dets[i] : NodeGenerator.makeInstructionSequence()), images.get(random.nextInt(images.size())));
+		for (int i = 0; i < numNodes; i++) {
+			Node node = new Node (this, ((dets!=null && dets.length > i && !rebuildNodes) ? dets[i] : NodeGenerator.makeInstructionSequence()), images.get(random.nextInt(images.size())));
 			activeNodes.add(node);
 		}
-		while (iterationNum < 100 && isOperating) {
+		while (iterationNum < numIts && isOperating) {
 			updateDream();
 			System.out.println ("Iteration " + iterationNum + " completed.");
 			iterationNum++;

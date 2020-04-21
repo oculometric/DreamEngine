@@ -6,7 +6,7 @@ public class NodeGenerator {
 	// TODO: Implement skipping and repeating
 	public static String makeInstructionSequence () {
 		Random random = new Random ();
-		String is = ""; // FIXME: Improve instruction sequence maker
+		String is = "";
 		int numInstrs = random.nextInt(500)+500;
 		for (int i = 0; i < numInstrs; i++) {
 			if (random.nextInt(3) > 0) {
@@ -53,7 +53,8 @@ public class NodeGenerator {
 	 * 21 - Repeat next instructions based on value of states - 0% (inserted separately)
 	 * 22 - End repeat - 0% (inserted separately)
 	 * 
-	 * 23 - Radial copy - 7%
+	 * 23 - Radial copy - 4%
+	 * 24 - Jump - 3%
 	 * 
 	 * @return String The command 
 	 */
@@ -94,12 +95,15 @@ public class NodeGenerator {
 			return "17";
 		} else if (i < 93) {
 			return "18";
+		} else if (i < 97) {
+			return "23";
 		}
-		return "23";
+		return "24";
 	}
 
 	private static String randomMoveCommand () {
 		Random r = new Random ();
-		return Integer.toString(r.nextInt(8) + 11);
+		if (r.nextBoolean()) return Integer.toString(r.nextInt(8) + 11);
+		return "24";
 	}
 }

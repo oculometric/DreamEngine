@@ -1,6 +1,5 @@
 package main;
 
-import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
@@ -8,10 +7,15 @@ import java.awt.event.WindowListener;
 import javax.swing.JFrame;
 
 public class DreamViewer extends JFrame {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public DreamViewer (DreamEngine de) {
 		super ("DreamEngine Viewer");
 		engine = de;
-		this.setSize(1024,1024);
+		this.setSize(engine.windowSize,engine.windowSize);
 		this.setResizable(false);
 		this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		this.addWindowListener(new WindowListener () {
@@ -40,6 +44,6 @@ public class DreamViewer extends JFrame {
 	
 	@Override
 	public void paint (Graphics g) {
-		g.drawImage (engine.activeDream, 0, 0, 1024, 1024, 0, 0, 4096, 4096, null);
+		g.drawImage (engine.activeDream, 0, 0, engine.windowSize, engine.windowSize, 0, 0, engine.imageSize, engine.imageSize, null);
 	}
 }
