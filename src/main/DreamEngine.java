@@ -54,7 +54,7 @@ public class DreamEngine {
 		int imagesFound = 0;
 		while (imagesFound < num) {
 			if (links.size() < 1) break;
-			BufferedImage[] imgs = searcher.images(links.get(random.nextInt(links.size())));
+			BufferedImage[] imgs = searcher.images(links.get(random.nextInt(links.size())), 2);
 			for (BufferedImage im : imgs) {
 				imagesFound++;
 				images.add(im);
@@ -66,16 +66,6 @@ public class DreamEngine {
 	public BufferedImage activeDream;
 	public boolean isOperating;
 	private ArrayList<Node> activeNodes = new ArrayList<Node> ();
-	
-	public String makeInstructionSequence () {
-		String is = ""; // FIXME: Improve instruction sequence maker
-		int numInstrs = random.nextInt(100)+500;
-		for (int i = 0; i < numInstrs; i++) {
-			is += random.nextInt(18);
-			is += ";";
-		}
-		return is;
-	}
 	
 	public void setPixel (int x, int y, int col) {
 		synchronized (setRequests) {
@@ -151,19 +141,27 @@ public class DreamEngine {
 	
 	public void start (String prompt) {
 		fetchImages (20, prompt);
-		activeDream = new BufferedImage (1024, 1024, BufferedImage.TYPE_INT_RGB);
+		activeDream = new BufferedImage (4096, 4096, BufferedImage.TYPE_INT_RGB);
 		viewer = new DreamViewer (this);
 		
 		String[] dets = readNodeDeterminators ();
 		isOperating = true;
-		for (int i = 0; i < 16; i++) {
-			Node node = new Node (this, ((dets!=null && dets.length > i) ? dets[i] : makeInstructionSequence()), images.get(random.nextInt(images.size())));
+		for (int i = 0; i < 4; i++) {
+			Node node = new Node (this, ((dets!=null && dets.length > i) ? dets[i] : NodeGenerator.makeInstructionSequence()), images.get(random.nextInt(images.size())));
 			activeNodes.add(node);
 		}
-		while (iterationNum < 10000 && isOperating) {
+		while (iterationNum < 100 && isOperating) {
 			updateDream();
 			System.out.println ("Iteration " + iterationNum + " completed.");
 			iterationNum++;
+			
+			if (random.nextBoolean()) {
+				Node n = activeNodes.get(random.nextInt(activeNodes.size()));
+				synchronized (n.buffer) {
+					n.buffer = images.get(random.nextInt(images.size()));
+					n.bufferCursor = new Cursor (0,0);
+				}
+			}
 			
 			try {Thread.sleep(50);} catch (InterruptedException e) {}
 		}

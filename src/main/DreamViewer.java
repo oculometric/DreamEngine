@@ -40,6 +40,6 @@ public class DreamViewer extends JFrame {
 	
 	@Override
 	public void paint (Graphics g) {
-		g.drawImage (engine.activeDream, 0, 0, 1024, 1024, 0, 0, 1024, 1024, null);
+		g.drawImage (engine.activeDream, 0, 0, 1024, 1024, 0, 0, 4096, 4096, null);
 	}
 }

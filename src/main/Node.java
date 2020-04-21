@@ -17,40 +17,52 @@ import java.awt.image.BufferedImage;
  * 04 - Regress state cursor
  * 05 - Reset state cursor
  * 06 - Reset state under cursor
- * 07 - Skip next instruction if state under cursor is true
+ * 07 - Skip next instructions if state under cursor is true
+ * 08 - End skip
  * 
- * 08 - Read buffer pixel to states
- * 09 - Write states to buffer pixel
+ * 09 - Read buffer pixel to states
+ * 10 - Write states to buffer pixel
  * 
- * 10 - Increment buffer x cursor
- * 11 - Decrement buffer x cursor
- * 12 - Increment buffer y cursor
- * 13 - Decrement buffer y cursor
- * 14 - Increment dream x cursor
- * 15 - Decrement dream x cursor
- * 16 - Increment dream y cursor
- * 17 - Decrement dream y cursor
+ * 11 - Increment buffer x cursor
+ * 12 - Decrement buffer x cursor
+ * 13 - Increment buffer y cursor
+ * 14 - Decrement buffer y cursor
+ * 15 - Increment dream x cursor
+ * 16 - Decrement dream x cursor
+ * 17 - Increment dream y cursor
+ * 18 - Decrement dream y cursor
  * 
- * TODO: Extra operations for area copying
- * 18 - 
+ * 19 - Begin area copy operation
+ * 20 - End area copy operation
+ * 
+ * 21 - Repeat next instructions based on value of states
+ * 22 - End repeat
+ * 
+ * 23 - Copy pixels in a radius around the cursor
+ * 
+ * 24 - Jump by an offset determined by the states TODO
  */
 
 public class Node {
 	public ArrayList<String> determinator;
 	
-	private BufferedImage buffer;
+	public BufferedImage buffer;
 	private boolean[] states = {false, false, false, false, false, false, false, false};
 	
 	private DreamEngine engine;
 	private Random random = new Random ();
 	
-	private Cursor bufferCursor;
+	public Cursor bufferCursor;
 	private Cursor dreamCursor;
+	
+	private Cursor bufferCursorFreeze = null;
+	private Cursor dreamCursorFreeze = null;
 	private int stateCursor = 0;
 	
 	public Node (DreamEngine en, String det, BufferedImage im) {
+		
 		bufferCursor = new Cursor (0,0);
-		dreamCursor = new Cursor (random.nextInt(1024), random.nextInt(1024));
+		dreamCursor = new Cursor (random.nextInt(4096), random.nextInt(4096));
 		
 		engine = en;
 		buffer = im;
@@ -80,11 +92,12 @@ public class Node {
 
 	private void executeDeterminator () {
 		boolean shouldSkipNext = false;
-		for (String si : determinator) {
-			if (shouldSkipNext) {
-				shouldSkipNext = false;
-				continue;
-			}
+		int loc = 0;
+		int loopbackLoc = -1;
+		int loopItsToDo = -1;
+		while (loc < determinator.size()) {
+			if (shouldSkipNext) continue;
+			String si = determinator.get(loc);
 			int instr;
 			try {
 				instr = Integer.parseInt(si);
@@ -120,6 +133,8 @@ public class Node {
 				shouldSkipNext = states[stateCursor];
 				break;
 			case 8:
+				shouldSkipNext = false;
+			case 9:
 				Color pixel = new Color (buffer.getRGB(bufferCursor.x, bufferCursor.y));
 				if (pixel.getRed() > 0) {
 					states[0] = true;
@@ -144,7 +159,7 @@ public class Node {
 				}
 				break;
 				// FIXME: Two remaining values?
-			case 9:
+			case 10:
 				int r = 0;
 				int g = 0;
 				int b = 0;
@@ -169,38 +184,91 @@ public class Node {
 				Color pix = new Color (r,g,b);
 				buffer.setRGB(bufferCursor.x, bufferCursor.y, pix.getRGB());
 				break;
-			case 10:
+			case 15:
+				dreamCursor.x++;
+				if (dreamCursor.x >= engine.activeDream.getWidth()) dreamCursor.x = 0;
+			case 11:
 				bufferCursor.x++;
 				if (bufferCursor.x >= buffer.getWidth()) bufferCursor.x = 0;
 				break;
-			case 11:
+			case 16:
+				dreamCursor.x--;
+				if (dreamCursor.x < 0) dreamCursor.x = engine.activeDream.getWidth()-1;
+			case 12:
 				bufferCursor.x--;
 				if (bufferCursor.x < 0) bufferCursor.x = buffer.getWidth()-1;
 				break;
-			case 12:
+			case 17:
+				dreamCursor.y++;
+				if (dreamCursor.y >= engine.activeDream.getHeight()) dreamCursor.y = 0;
+			case 13:
 				bufferCursor.y++;
 				if (bufferCursor.y >= buffer.getHeight()) bufferCursor.y = 0;
 				break;
-			case 13:
+			case 18:
+				dreamCursor.y--;
+				if (dreamCursor.y < 0) dreamCursor.y = engine.activeDream.getHeight()-1;
+			case 14:
 				bufferCursor.y--;
 				if (bufferCursor.y < 0) bufferCursor.y = buffer.getHeight()-1;
 				break;
-			case 14:
-				dreamCursor.x++;
-				if (dreamCursor.x >= engine.activeDream.getWidth()) dreamCursor.x = 0;
+			case 19:
+				bufferCursorFreeze = bufferCursor;
+				dreamCursorFreeze = dreamCursor;
 				break;
-			case 15:
-				dreamCursor.x--;
-				if (dreamCursor.x < 0) dreamCursor.x = engine.activeDream.getWidth()-1;
+			case 20:
+				if (bufferCursorFreeze == null) break;
+				copyArea (bufferCursor, bufferCursorFreeze, dreamCursorFreeze);
+				bufferCursorFreeze = null;
+				dreamCursorFreeze = null;
 				break;
-			case 16:
-				dreamCursor.y++;
-				if (dreamCursor.y >= engine.activeDream.getHeight()) dreamCursor.y = 0;
+			case 21:
+				if (loopbackLoc == -1) {
+					int i = statesToInt ();
+					loopbackLoc = loc+1;
+					loopItsToDo = i;
+				}
 				break;
-			case 17:
-				dreamCursor.y--;
-				if (dreamCursor.y < 0) dreamCursor.y = engine.activeDream.getHeight()-1;
+			case 22:
+				if (loopbackLoc == -1) break;
+				loopItsToDo--;
+				if (loopItsToDo > 0) loc = loopbackLoc;
+				else {
+					loopItsToDo = -1;
+					loopbackLoc = -1;
+				}
 				break;
+			case 23:
+				int radius = statesToInt();
+				copyArea (new Cursor (bufferCursor.x-radius, bufferCursor.y-radius), new Cursor (bufferCursor.x+radius, bufferCursor.y+radius), new Cursor (dreamCursor.x-radius, dreamCursor.y-radius));
+			}
+			loc++;
+		}
+	}
+
+	private int statesToInt() {
+		int r = 0;
+		int a = 1;
+		for (boolean state : states) {
+			if (state) r += a;
+			a *= 2;
+		}
+		return r;
+	}
+
+	private void copyArea(Cursor c1, Cursor c2, Cursor ps) {
+		Cursor start = new Cursor (Math.min (c1.x, c2.x), Math.min (c1.y, c2.y));
+		int xex = Math.abs(c1.x - c2.x);
+		int yex = Math.abs(c1.y - c2.y);
+		for (int i = 0; i < xex; i++) {
+			for (int j = 0; j < yex; j++) {
+				int ox = start.x + i;
+				int oy = start.y + j;
+				int tx = ps.x + i;
+				int ty = ps.y + j;
+				if (ox < 0 || oy < 0 || tx < 0 || ty < 0) continue;
+				if (ox >= buffer.getWidth() || oy >= buffer.getHeight() || tx >= engine.activeDream.getWidth() || ty >= engine.activeDream.getHeight()) continue;
+				engine.setPixel(tx, ty, buffer.getRGB(ox, oy));
 			}
 		}
 	}
